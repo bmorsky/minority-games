@@ -216,7 +216,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
     # immitation using fermi rule
     def immitate(self, immitation_rate, k):
         n = len(self.agent_pool)
-        for i in range(4*n):
+        for i in range(n):
         #for i in range(len(self.agent_pool)):
             if immitation_rate > random.uniform(0,1):
                 # randomly select an agent
@@ -234,23 +234,23 @@ class MinorityGameWithStrategyTable(MinorityGame):
                     # replace agent's worst with opponent's best
                     self.agent_pool[agent_index].strategy_pool.remove(worst)
                     self.agent_pool[agent_index].strategy_pool.append(opponent)
-    
+
     # mutation
     def mutate(self, mutation_rate):
         for i in range(len(self.agent_pool)):
             if mutation_rate > random.uniform(0,1):
                 # randomly select an agent
                 agent_index = random.randint(0, len(self.agent_pool) - 1)
-                
+
                 # randomly select a strategy
                 strategy_num = len(self.agent_pool[agent_index].strategy_pool)
                 strategy = self.agent_pool[agent_index].strategy_pool[random.randint(0, strategy_num - 1)]
-            
+
                 # randomly remove a strategy of the agent and generate a new strategy with weight 10
                 self.agent_pool[agent_index].strategy_pool.pop(random.randrange(strategy_num))
                 self.agent_pool[agent_index].strategy_pool.append(StrategyTable(3,100))
-    
-        
+
+
     def run_game(self):
         """
         run the minority game n times
@@ -313,7 +313,7 @@ if __name__ == "__main__":
     mean_list,stdd_list,win_proportion = m.run_game()
 
     #print(win_proportion)
-    
+
     fig = plt.figure(figsize=(10, 4))
     plt.plot(win_proportion)
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
