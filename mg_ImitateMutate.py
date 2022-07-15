@@ -4,9 +4,10 @@ import math
 
 import numpy as np
 import matplotlib as mpl
-import seaborn as sns
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+#import pandas as pd
+#import seaborn as sns
 
 
 # convert a list of int into string
@@ -216,9 +217,9 @@ class MinorityGameWithStrategyTable(MinorityGame):
 
     # immitation using fermi rule
     def immitate(self, immitation_rate, k):
-        # n = len(self.agent_pool)
-        # for i in range(4*n):
-        for i in range(len(self.agent_pool)):
+        n = len(self.agent_pool)
+        for i in range(4*n):
+        #for i in range(len(self.agent_pool)):
             if immitation_rate > random.uniform(0,1):
                 # randomly select an agent
                 agent_index = random.randint(0, len(self.agent_pool) - 1)
@@ -247,9 +248,9 @@ class MinorityGameWithStrategyTable(MinorityGame):
                 strategy_num = len(self.agent_pool[agent_index].strategy_pool)
                 strategy = self.agent_pool[agent_index].strategy_pool[random.randint(0, strategy_num - 1)]
             
-                # randomly remove a strategy of the agent and generate a new strategy with weight 10
+                # randomly remove a strategy of the agent and generate a new strategy with weight 0
                 self.agent_pool[agent_index].strategy_pool.pop(random.randrange(strategy_num))
-                self.agent_pool[agent_index].strategy_pool.append(StrategyTable(3,10))
+                self.agent_pool[agent_index].strategy_pool.append(StrategyTable(3,0))
     
         
     def run_game(self):
@@ -258,36 +259,45 @@ class MinorityGameWithStrategyTable(MinorityGame):
         """
         mean_list = []
         stdd_list = []
-        win_proportion = []
+        
         zero_win = 0
         one_win = 0
-        for i in range(self.run_num):
-            num_of_one = 0
-            for agent in self.agent_pool:
-                predict_temp  = agent.predict(self.all_history[-self.depth:])
-                num_of_one += predict_temp
-            game_result = 1 if num_of_one < self.agent_num / 2 else 0
-            for agent in self.agent_pool:
-                agent.get_winner(game_result)
-            winner_num = num_of_one if game_result == 1 else self.agent_num - num_of_one
-            if game_result == 1:
-                one_win += 1
-            else:
-                zero_win += 1
-            self.win_history[i] = winner_num
-            self.all_history.append(game_result)
-            if (i+1)%10000 == 0:
-                mean_list.append(self.win_history[:i].mean())
-                stdd_list.append(self.win_history[:i].std())
-                print("%dth round"%i)
-            win_proportion.append(winner_num/len(self.agent_pool))
-            #if (i+1) % 10 == 0:
-            self.immitate(0.5, 10)
-            self.mutate(0.0001)
+        k = 10
+        avg_win = [ [0]*11 for i in range(11)]
+        for j in np.arange(0.0,1.1,0.1):
+            self.immitate(j, k)
+            for h in np.arange(0.0,1.1,0.1):
+                self.mutate(h)
+                win_proportion = []
+                for i in range(self.run_num):
+                    num_of_one = 0
+                    for agent in self.agent_pool:
+                        predict_temp  = agent.predict(self.all_history[-self.depth:])
+                        num_of_one += predict_temp
+                    game_result = 1 if num_of_one < self.agent_num / 2 else 0
+                    for agent in self.agent_pool:
+                        agent.get_winner(game_result)
+                    winner_num = num_of_one if game_result == 1 else self.agent_num - num_of_one
+                    if game_result == 1:
+                        one_win += 1
+                    else:
+                        zero_win += 1
+                    self.win_history[i] = winner_num
+                    self.all_history.append(game_result)
+                    if (i+1)%10000 == 0:
+                        mean_list.append(self.win_history[:i].mean())
+                        stdd_list.append(self.win_history[:i].std())
+                        print("%dth round"%i)
+                    win_proportion.append(winner_num/len(self.agent_pool))
+                avg_j_h = sum(win_proportion) / self.run_num
+                j_index = int(j*10)
+                h_index = int(h*10)
+                avg_win[j_index][h_index] = avg_j_h
 
         print("The number of 0 win: " + str(zero_win))
         print("The number of 1 win: " + str(one_win))
-        return mean_list,stdd_list,win_proportion
+        # ave_win = sum(win_proportion)/self.run_num
+        return mean_list,stdd_list,avg_win
 
 
     def winner_for_diff_group(self):
@@ -309,14 +319,14 @@ if __name__ == "__main__":
     mean_list = []
     stdd_list = []
     win_proportion = []
-    m = MinorityGameWithStrategyTable(11, 10000, 3, 3) # 201 agents 5
+    m = MinorityGameWithStrategyTable(101, 50, 3, 3) 
     print(m.winner_for_diff_group())
-    mean_list,stdd_list,win_proportion = m.run_game()
+    mean_list,stdd_list,avg_win = m.run_game()
 
     #print(win_proportion)
-    print(win_proportion)
-    print(len(win_proportion))
+    print(avg_win)
     
+
     fig = plt.figure(figsize=(10, 4))
     plt.plot(win_proportion)
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)

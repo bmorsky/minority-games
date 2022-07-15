@@ -1,10 +1,11 @@
-import itertools
-import random
-import math
+#!/usr/bin/env python3
+# coding: utf-8
+
+import itertools   # make loop efficency
+import random      # 
 
 import numpy as np
 import matplotlib as mpl
-import seaborn as sns
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -23,13 +24,12 @@ def max_randomly(list_item, key_function):
     else:
         list_item.sort(key=key_function, reverse=True)
         item_iter = 0
-        max_key = key_function(list_item[0])
+        max_key = key_function(list_item[0]) 
         for item in list_item:
             if key_function(item) == max_key:
                 item_iter += 1
-        last_item_index = item_iter
-        return list_item[random.randint(0, last_item_index - 1)]
-
+        second_item_index = item_iter
+        return list_item[random.randint(0, second_item_index - 1)]
 
 def min_randomly(list_item, key_function):
     if len(list_item) == 1:
@@ -37,24 +37,23 @@ def min_randomly(list_item, key_function):
     else:
         list_item.sort(key=key_function, reverse=False)
         item_iter = 0
-        min_key = key_function(list_item[0])
+        min_key = key_function(list_item[0]) 
         for item in list_item:
             if key_function(item) == min_key:
                 item_iter += 1
-        last_item_index = item_iter
-        return list_item[random.randint(0, last_item_index - 1)]
-
+        second_item_index = item_iter
+        return list_item[random.randint(0, second_item_index - 1)]
 
 class StrategyTable(object):
-    def __init__(self, depth=3, weight=0):
+    def __init__(self, depth=3):
         """
         :param depth: agent memory
         :return: None
         """
-
-        combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=depth)]
-        self.__strategy_table = {x: random.randint(0, 1) for x in combinations_string_list}
-        self.__weight = weight
+        
+        combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=depth)] 
+        self.__strategy_table = {x: random.randint(0, 1) for x in combinations_string_list}   # strategy list 000 001 。。。
+        self.__weight = 0
 
     @property
     def weight(self):
@@ -81,6 +80,9 @@ class StrategyTable(object):
             self.__weight += 1
         else:
             self.__weight -= 1
+
+    def show_weight(self):
+        return self.__weight
 
 
 class Agent(object):
@@ -132,7 +134,6 @@ class AgentWithStrategyTable(Agent):
         else:
             raise Exception("agent memory input error")
 
-
     # result is winner room number
     # update weights of tables
     def get_winner(self, result):
@@ -154,7 +155,7 @@ class MinorityGame(object):
         self.agent_num = agent_num
         self.run_num = run_num
         self.agent_pool = []
-        self.win_history = np.zeros(run_num)
+        self.win_history = np.zeros(run_num)   # 给run-num个zero, 如果（a，b），就是a个以b为长度的0
 
     @property
     def score_mean_std(self):
@@ -178,8 +179,8 @@ class MinorityGameWithRandomChoice(MinorityGame):
         for i in range(self.run_num):
             num_of_one = 0
             for agent in self.agent_pool:
-                num_of_one += agent.predict()
-            game_result = 1 if num_of_one < self.agent_num/2 else 0
+                num_of_one+=agent.predict()
+            game_result = 1 if num_of_one<self.agent_num/2 else 0
             winner_num = num_of_one if game_result == 1 else self.agent_num - num_of_one
             self.win_history[i] = winner_num
             if (i+1)%10000 == 0:
@@ -199,14 +200,14 @@ class MinorityGameWithStrategyTable(MinorityGame):
         self.strategy_num = strategy_num
 
         for x in range(depth):
-            self.all_history.append(random.randint(0, 1))
+            self.all_history.append(random.randint(0, 1)) # 生成一个长度为depth的memory
         self.init_agents()
 
     def init_agents(self):
         """
         generate S tables for each agent
         if strategy_num has multiple variable, then the agent population will have
-        different strategy number for each agent
+        different  strategy number for each agent
         """
         for i in range(self.agent_num):
             if i < self.agent_num // len(self.strategy_num):
@@ -214,44 +215,20 @@ class MinorityGameWithStrategyTable(MinorityGame):
             else:
                 self.agent_pool.append(AgentWithStrategyTable(self.depth, self.strategy_num[1]))
 
-    # immitation using fermi rule
-    def immitate(self, immitation_rate, k):
-        # n = len(self.agent_pool)
-        # for i in range(4*n):
-        for i in range(len(self.agent_pool)):
-            if immitation_rate > random.uniform(0,1):
-                # randomly select an agent
-                agent_index = random.randint(0, len(self.agent_pool) - 1)
-                # generate a random opponent
-                opponent_index = random.choice([j for j in range(len(self.agent_pool)) if j is not agent_index])
-                agent = max_randomly(self.agent_pool[agent_index].strategy_pool, lambda x: x.weight)
-                opponent = max_randomly(self.agent_pool[opponent_index].strategy_pool, lambda x: x.weight)
-                try:
-                    fermi = 1/(1 + math.exp(k*(agent.weight - opponent.weight)))
-                except:
-                    fermi = float('inf')
-                if fermi > random.uniform(0,1):
-                    worst = min_randomly(self.agent_pool[agent_index].strategy_pool, lambda x: x.weight)
-                    # replace agent's worst with opponent's best
-                    self.agent_pool[agent_index].strategy_pool.remove(worst)
-                    self.agent_pool[agent_index].strategy_pool.append(opponent)
-    
-    # mutation
-    def mutate(self, mutation_rate):
-        for i in range(len(self.agent_pool)):
-            if mutation_rate > random.uniform(0,1):
-                # randomly select an agent
-                agent_index = random.randint(0, len(self.agent_pool) - 1)
-                
-                # randomly select a strategy
-                strategy_num = len(self.agent_pool[agent_index].strategy_pool)
-                strategy = self.agent_pool[agent_index].strategy_pool[random.randint(0, strategy_num - 1)]
-            
-                # randomly remove a strategy of the agent and generate a new strategy with weight 10
-                self.agent_pool[agent_index].strategy_pool.pop(random.randrange(strategy_num))
-                self.agent_pool[agent_index].strategy_pool.append(StrategyTable(3,10))
-    
-        
+    def immitate(self, k):
+        for m in range(len(self.agent_pool)):
+            opponent_index = random.choice([j for j in range(len(self.agent_pool)) if j is not m])
+            agent = max_randomly(self.agent_pool[m].strategy_pool, lambda x: x.weight)
+            opponent = max_randomly(self.agent_pool[opponent_index].strategy_pool, lambda x: x.weight)
+            try:
+                fermi = 1/(1 + math.exp(k*(agent.weight - opponent.weight)))
+            except:
+                fermi = float('inf')
+            if fermi > random.uniform(0,1):
+                min = min_randomly(self.agent_pool[m].strategy_pool, lambda x: x.weight)
+                self.agent_pool[m].strategy_pool.remove(min)
+                self.agent_pool[m].strategy_pool.append(opponent)
+
     def run_game(self):
         """
         run the minority game n times
@@ -263,6 +240,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
         one_win = 0
         for i in range(self.run_num):
             num_of_one = 0
+            record_count = 0
             for agent in self.agent_pool:
                 predict_temp  = agent.predict(self.all_history[-self.depth:])
                 num_of_one += predict_temp
@@ -279,16 +257,14 @@ class MinorityGameWithStrategyTable(MinorityGame):
             if (i+1)%10000 == 0:
                 mean_list.append(self.win_history[:i].mean())
                 stdd_list.append(self.win_history[:i].std())
+                record_count+=1
                 print("%dth round"%i)
             win_proportion.append(winner_num/len(self.agent_pool))
-            #if (i+1) % 10 == 0:
-            self.immitate(0.5, 10)
-            self.mutate(0.0001)
-
+            if (i+1)%10 == 0:
+                self.immitate(0.01)
         print("The number of 0 win: " + str(zero_win))
         print("The number of 1 win: " + str(one_win))
         return mean_list,stdd_list,win_proportion
-
 
     def winner_for_diff_group(self):
         mid = len(self.agent_pool)/len(self.strategy_num)
@@ -304,18 +280,15 @@ class MinorityGameWithStrategyTable(MinorityGame):
 
         return first_part_score,second_part_score
 
-
 if __name__ == "__main__":
     mean_list = []
     stdd_list = []
     win_proportion = []
-    m = MinorityGameWithStrategyTable(11, 10000, 3, 3) # 201 agents 5
+    m = MinorityGameWithStrategyTable(201, 10000, 3, 3) # 201 agents 5
     print(m.winner_for_diff_group())
     mean_list,stdd_list,win_proportion = m.run_game()
 
     #print(win_proportion)
-    print(win_proportion)
-    print(len(win_proportion))
     
     fig = plt.figure(figsize=(10, 4))
     plt.plot(win_proportion)
@@ -326,3 +299,11 @@ if __name__ == "__main__":
     plt.xlabel('Iteration number')
     plt.ylabel('win proportion')
     fig.savefig('change of win propor.jpg')
+
+
+
+  
+    
+
+
+

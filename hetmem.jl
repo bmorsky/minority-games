@@ -39,7 +39,7 @@ for m=1:R
         end
     end
 
-    # Determine change in strategy (i.e. change in memory) by
+    # Determine change in stragey (i.e. change in memory) by
     # selecting another random players and comparing payoffs
     for n=1:N
         player = rand(1:N)
