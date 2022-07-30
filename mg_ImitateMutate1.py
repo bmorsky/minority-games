@@ -248,7 +248,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
                 strategy_num = len(self.agent_pool[agent_index].strategy_pool)
                 strategy = self.agent_pool[agent_index].strategy_pool[random.randint(0, strategy_num - 1)]
             
-                # randomly remove a strategy of the agent and generate a new strategy with weight 0
+                # randomly remove a strategy of the agent and generate a new strategy with weight 10
                 self.agent_pool[agent_index].strategy_pool.pop(random.randrange(strategy_num))
                 self.agent_pool[agent_index].strategy_pool.append(StrategyTable(3,0))
     
@@ -260,6 +260,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
         mean_list = []
         stdd_list = []
         
+        volatility=[]
         zero_win = 0
         one_win = 0
         k = 10
@@ -269,6 +270,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
             for h in np.arange(0.0,1.1,0.1):
                 self.mutate(h)
                 win_proportion = []
+                vol=[]
                 for i in range(self.run_num):
                     num_of_one = 0
                     for agent in self.agent_pool:
@@ -289,15 +291,20 @@ class MinorityGameWithStrategyTable(MinorityGame):
                         stdd_list.append(self.win_history[:i].std())
                         print("%dth round"%i)
                     win_proportion.append(winner_num/len(self.agent_pool))
+                xbar=sum(win_proportion)/len(win_proportion)
+                for i in range(self.run_num):
+                    vol.append(((win_proportion[i]-xbar)*(win_proportion[i]-xbar))/(((len(self.agent_pool)-1))*(len(self.agent_pool))))
+                volatility.append(sum(vol))
                 avg_j_h = sum(win_proportion) / self.run_num
                 j_index = int(j*10)
                 h_index = int(h*10)
                 avg_win[j_index][h_index] = avg_j_h
+        volatility=[volatility[x:x+11] for x in range(0, len(volatility), 11)]
 
         print("The number of 0 win: " + str(zero_win))
         print("The number of 1 win: " + str(one_win))
         # ave_win = sum(win_proportion)/self.run_num
-        return mean_list,stdd_list,avg_win
+        return mean_list,stdd_list,avg_win,volatility
 
 
     def winner_for_diff_group(self):
@@ -319,12 +326,14 @@ if __name__ == "__main__":
     mean_list = []
     stdd_list = []
     win_proportion = []
-    m = MinorityGameWithStrategyTable(101, 50, 3, 3) 
+    m = MinorityGameWithStrategyTable(101, 10, 3, 3) 
     print(m.winner_for_diff_group())
-    mean_list,stdd_list,avg_win = m.run_game()
+    mean_list,stdd_list,avg_win,volatility = m.run_game()
 
     #print(win_proportion)
-    print(avg_win)
+    #print(avg_win)
+    print(len(volatility))
+    print(volatility)
     
 
     fig = plt.figure(figsize=(10, 4))
