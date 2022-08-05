@@ -247,7 +247,6 @@ class MinorityGameWithStrategyTable(MinorityGame):
                 # randomly select a strategy
                 strategy_num = len(self.agent_pool[agent_index].strategy_pool)
                 strategy = self.agent_pool[agent_index].strategy_pool[random.randint(0, strategy_num - 1)]
-                print(strategy.get())
 
                 # randomly remove a strategy of the agent and generate a new strategy with weight 10
                 self.agent_pool[agent_index].strategy_pool.pop(random.randrange(strategy_num))
