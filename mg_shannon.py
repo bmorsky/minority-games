@@ -194,7 +194,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
             else:
                 self.agent_pool.append(AgentWithStrategyTable(self.depth, self.strategy_num[1]))
 
-    # return all strategy list  
+    # return all strategy list
     def all_strategy(self):
         combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=3)]
         all_stategy = [dict(zip(combinations_string_list, x)) for x in itertools.product([0,1], repeat=8)]
@@ -237,7 +237,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
             if mutation_rate > random.uniform(0,1):
                 # randomly select an agent
                 agent_index = random.randint(0, len(self.agent_pool) - 1)
-                
+
                 # randomly select an old strategy
                 strategy_num = len(self.agent_pool[agent_index].strategy_pool)
                 old_strat_index = random.randint(0, strategy_num - 1)
@@ -253,7 +253,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
                         strategy_freq[i] += 1
                     if all_stategy[i] == old_strat.strategy_table:
                         strategy_freq[i] -= 1
-                
+
                 # remove the old strategy of the agent and add the new strategy
                 self.agent_pool[agent_index].strategy_pool.pop(old_strat_index)
                 self.agent_pool[agent_index].strategy_pool.append(new_strat)
@@ -265,7 +265,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
         """
         mean_list = []
         stdd_list = []
-        
+
         volatility=[]
         avolatility=[]
         zero_win = 0
@@ -316,7 +316,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
                     win_proportion.append(winner_num/len(self.agent_pool))
                     num_of_one_list.append(num_of_one/len(self.agent_pool))
                 xbar=sum(win_proportion)/len(win_proportion)
-                abar=sum(num_of_one_list)/len(num_of_one_list)
+                abar=sum(num_of_one_list)
                 for i in range(self.run_num):
                     vol.append((win_proportion[i]-xbar)*(win_proportion[i]-xbar)/(((len(self.agent_pool)-1))*(len(self.agent_pool))))
                 for i in range(self.run_num):
@@ -356,7 +356,7 @@ if __name__ == "__main__":
     # mean_list = []
     # stdd_list = []
     # win_proportion = []
-    m = MinorityGameWithStrategyTable(101, 10, 3, 3) 
+    m = MinorityGameWithStrategyTable(101, 10, 3, 3)
     # print(m.winner_for_diff_group())
     mean_list,stdd_list,avg_win,volatility,avolatility = m.run_game()
 
@@ -364,7 +364,7 @@ if __name__ == "__main__":
     #print(avg_win)
     # print(avolatility)
     # print(volatility)
-    
+
 
     # fig = plt.figure(figsize=(10, 4))
     # plt.plot(win_proportion)
