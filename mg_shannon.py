@@ -314,9 +314,9 @@ class MinorityGameWithStrategyTable(MinorityGame):
                         stdd_list.append(self.win_history[:i].std())
                         print("%dth round"%i)
                     win_proportion.append(winner_num/len(self.agent_pool))
-                    num_of_one_list.append(num_of_one/len(self.agent_pool))
+                    num_of_one_list.append(num_of_one)
                 xbar=sum(win_proportion)/len(win_proportion)
-                abar=sum(num_of_one_list)
+                abar=sum(num_of_one_list)/len(num_of_one_list)
                 for i in range(self.run_num):
                     vol.append((win_proportion[i]-xbar)*(win_proportion[i]-xbar)/(((len(self.agent_pool)-1))*(len(self.agent_pool))))
                 for i in range(self.run_num):
