@@ -1,7 +1,7 @@
 import itertools
 import random
 import math
-
+import copy
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
@@ -272,7 +272,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
         one_win = 0
         k = 10
         avg_win = [ [0]*11 for i in range(11)]
-        strategy_freq = [0]*256
+        initial_freq = [0]*256
         temp = 0
         shannon = []
         shanno = []
@@ -283,19 +283,23 @@ class MinorityGameWithStrategyTable(MinorityGame):
                 all_stategy = self.all_strategy()
                 for i in range (len(all_stategy)):
                     if all_stategy[i] == y.strategy_table:
-                        strategy_freq[i] += 1
+                        initial_freq[i] += 1
 
-        # print("Before the game, strategy frequencies are:")
-        # print(strategy_freq)
+        # save initial agents' info
+        initial_agent_copy = copy.deepcopy(self.agent_pool)
 
+        #simulation
         for j in np.arange(0.0,1.1,0.1):
-            
             for h in np.arange(0.0,1.1,0.1):
-                
                 win_proportion = []
                 num_of_one_list=[]
                 vol=[]
                 avol=[]
+                # strategy_freq = initial_freq
+                strategy_freq = initial_freq[:]
+                self.agent_pool = copy.deepcopy(initial_agent_copy)
+                # print("Before the game, strategy frequencies are:")
+                # print(strategy_freq)
                 for i in range(self.run_num):
                     self.imitate(j, k, strategy_freq)
                     self.mutate(h, strategy_freq)
@@ -322,10 +326,21 @@ class MinorityGameWithStrategyTable(MinorityGame):
                     strat_freq_sum = sum(strategy_freq)
                     shan=0
                     for i in range(len(strategy_freq)):
-                        if strategy_freq[i] != 0:
+                        if strategy_freq[i] > 0:
                             shan -= (strategy_freq[i]/strat_freq_sum) * math.log(strategy_freq[i]/strat_freq_sum)
+                    # print(shan)
                     shannon.append(shan)
+                
+                # print("After the game, strategy frequencies are:")
+                # print(strategy_freq)
                 c = sum(shannon)/len(shannon)
+                shannon = []
+                # sourceFile = open('reinitialze.txt', 'a')
+                # print("social: ",j, "asocial: ", h, file = sourceFile)
+                # print("average is: ", c, file = sourceFile)
+                # print("counts", len(shannon), file = sourceFile)
+                # print("--------------------------------", file = sourceFile)
+                # sourceFile.close()
                 shanno.append(c)
                 xbar=sum(win_proportion)/len(win_proportion)
                 abar=sum(num_of_one_list)/len(num_of_one_list)
@@ -339,9 +354,9 @@ class MinorityGameWithStrategyTable(MinorityGame):
                 j_index = int(j*10)
                 h_index = int(h*10)
                 avg_win[j_index][h_index] = avg_j_h
-        volatility=[volatility[x:x+11] for x in range(0, len(volatility), 11)]
-        avolatility=[avolatility[y:y+11] for y in range(0, len(avolatility), 11)]
-        shanno=[shanno[y:y+11] for y in range(0, len(shanno), 11)]
+        #volatility=[volatility[x:x+11] for x in range(0, len(volatility), 11)]
+        #avolatility=[avolatility[y:y+11] for y in range(0, len(avolatility), 11)]
+        #shanno=[shanno[y:y+11] for y in range(0, len(shanno), 11)]
         print("The number of 0 win: " + str(zero_win))
         print("The number of 1 win: " + str(one_win))
         # print("After the game, strategy frequencies are:")
@@ -365,12 +380,44 @@ class MinorityGameWithStrategyTable(MinorityGame):
 
 
 if __name__ == "__main__":
-    # mean_list = []
-    # stdd_list = []
-    # win_proportion = []
-    m = MinorityGameWithStrategyTable(101, 10, 3, 3) 
+    mean_list = []
+    stdd_list = []
+    avg_win = []
+    volatility = []
+    avolatility = []
+    shannon = []
+    m = MinorityGameWithStrategyTable(101, 2, 3, 3) 
     # print(m.winner_for_diff_group())
+    avevol=[]
+    aveavol=[]
+    aveshan=[]
     mean_list,stdd_list,avg_win,volatility,avolatility,shanno = m.run_game()
+    avevol=volatility
+    aveavol=avolatility
+    aveshan=shanno
+    #print(avevol)
+    for i in range(2): #number of realization -1
+        mean_list1 = []
+        stdd_list1 = []
+        avg_win1 = []
+        volatility1 = []
+        avolatility1 = []
+        shannon1 = []
+        mean_list1,stdd_list1,avg_win1,volatility1,avolatility1,shanno1 = m.run_game()
+        avevol = np.add(avevol, volatility1)
+        aveavol = np.add(aveavol, avolatility1)
+        aveshan = np.add(avevol, shanno1)
+    numreal = 3 #number of realization
+    avevola = [x / numreal for x in avevol]
+    avevolat = [avevola[x:x+11] for x in range(0, len(avevola), 11)] #final volatility after several realization
+    aveavola = [x / numreal for x in aveavol]
+    aveavolat = [aveavola[x:x+11] for x in range(0, len(aveavola), 11)] #final avolatility
+    aveshann = [x / numreal for x in aveshan]
+    aveshanno = [aveshann[x:x+11] for x in range(0, len(aveshann), 11)] #final shannon
+    print(avevolat)
+    print(aveavolat)
+    print(aveshanno)
+
 
     #print(win_proportion)
     #print(avg_win)
