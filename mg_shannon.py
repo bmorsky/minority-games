@@ -47,21 +47,21 @@ def min_randomly(list_item, key_function):
 
 
 class StrategyTable(object):
-    def __init__(self, depth=3, weight=0):
+    def __init__(self, memory_length=3, virtual_points=0):
         """
-        :param depth: agent memory
+        :param memory: agent memory
         :return: None
         """
 
-        combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=depth)]
-        all_stategy = [dict(zip(combinations_string_list, x)) for x in itertools.product([0,1], repeat=2**depth)]
+        combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=memory_length)]
+        all_stategy = [dict(zip(combinations_string_list, x)) for x in itertools.product([0,1], repeat=2**memory_length)]
         # self.__strategy_table = {x: random.randint(0, 1) for x in combinations_string_list}
         self.__strategy_table = random.choice(all_stategy)
-        self.__weight = weight
+        self.__virtual_points = virtual_points
 
     @property
-    def weight(self):
-        return self.__weight
+    def virtual_points(self):
+        return self.__virtual_points
 
     @property
     def strategy_table(self):
@@ -75,15 +75,15 @@ class StrategyTable(object):
         """
         return self.__strategy_table[history]
 
-    def update_weight(self, is_win):
+    def update_virtual_points(self, is_win):
         """
         :param is_win: boolean, Did the strategy win
-        :return: adjust the weight
+        :return: adjust the virtual_points
         """
         if is_win:
-            self.__weight += 1
+            self.__virtual_points += 1
         else:
-            self.__weight -= 1
+            self.__virtual_points -= 1
 
 
 class Agent(object):
@@ -102,16 +102,16 @@ class AgentWithStrategyTable(Agent):
     inherited with Agent class
     """
 
-    def __init__(self, depth=3, strategy_num=2):
+    def __init__(self, memory=3, strategy_num=2):
         # last memory
         self.__history = None
-        self.__depth = depth
+        self.__memory = memory
         # init strategy_pool
         self.__strategy_pool = []
         self.__win_times = 0
         self.__last_choice = 0
         for x in range(strategy_num):
-            strategy = StrategyTable(depth)
+            strategy = StrategyTable(memory)
             self.__strategy_pool.append(strategy)
 
     @property
@@ -125,12 +125,12 @@ class AgentWithStrategyTable(Agent):
     def predict(self, history):
         """
         :param history: last m winning group code, list of int
-        :return:   next decision from a table which has the highest weight
+        :return:   next decision from a table which has the highest virtual_points
         """
         history = num_list_to_str(history)
-        if len(history) == self.__depth:
+        if len(history) == self.__memory:
             self.__history = history
-            strategy_choice = max_randomly(self.__strategy_pool, lambda x: x.weight)
+            strategy_choice = max_randomly(self.__strategy_pool, lambda x: x.virtual_points)
             self.__last_choice = strategy_choice.predict(self.__history)
             return self.__last_choice
         else:
@@ -138,14 +138,14 @@ class AgentWithStrategyTable(Agent):
 
 
     # result is winner room number
-    # update weights of tables
+    # update virtual_pointss of tables
     def get_winner(self, result):
         """
         :param result: the winning group of this round
         """
         for table in self.__strategy_pool:
             is_win = result == table.predict(self.__history)
-            table.update_weight(is_win)
+            table.update_virtual_points(is_win)
         if result == self.__last_choice:
             self.__win_times+=1
 
@@ -172,13 +172,13 @@ class MinorityGameWithStrategyTable(MinorityGame):
     """
     class used for run the minority game with StrategyTable
     """
-    def __init__(self, agent_num, run_num, depth, *strategy_num):
+    def __init__(self, agent_num, run_num, memory, *strategy_num):
         super(MinorityGameWithStrategyTable,self).__init__(agent_num, run_num)
         self.all_history = list()
-        self.depth = depth
+        self.memory = memory
         self.strategy_num = strategy_num
 
-        for x in range(depth):
+        for x in range(memory):
             self.all_history.append(random.randint(0, 1))
         self.init_agents()
 
@@ -190,11 +190,11 @@ class MinorityGameWithStrategyTable(MinorityGame):
         """
         for i in range(self.agent_num):
             if i < self.agent_num // len(self.strategy_num):
-                self.agent_pool.append(AgentWithStrategyTable(self.depth, self.strategy_num[0]))
+                self.agent_pool.append(AgentWithStrategyTable(self.memory, self.strategy_num[0]))
             else:
-                self.agent_pool.append(AgentWithStrategyTable(self.depth, self.strategy_num[1]))
+                self.agent_pool.append(AgentWithStrategyTable(self.memory, self.strategy_num[1]))
 
-    # return all strategy list  
+    # return all strategy list
     def all_strategy(self):
         combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=3)]
         all_stategy = [dict(zip(combinations_string_list, x)) for x in itertools.product([0,1], repeat=8)]
@@ -210,14 +210,14 @@ class MinorityGameWithStrategyTable(MinorityGame):
                 agent_index = random.randint(0, len(self.agent_pool) - 1)
                 # generate a random opponent
                 opponent_index = random.choice([j for j in range(len(self.agent_pool)) if j is not agent_index])
-                agent = max_randomly(self.agent_pool[agent_index].strategy_pool, lambda x: x.weight)
-                opponent = max_randomly(self.agent_pool[opponent_index].strategy_pool, lambda x: x.weight)
+                agent = max_randomly(self.agent_pool[agent_index].strategy_pool, lambda x: x.virtual_points)
+                opponent = max_randomly(self.agent_pool[opponent_index].strategy_pool, lambda x: x.virtual_points)
                 try:
-                    fermi = 1/(1 + math.exp(k*(agent.weight - opponent.weight)))
+                    fermi = 1/(1 + math.exp(k*(agent.virtual_points - opponent.virtual_points)))
                 except:
                     fermi = float('inf')
                 if fermi > random.uniform(0,1):
-                    worst = min_randomly(self.agent_pool[agent_index].strategy_pool, lambda x: x.weight)
+                    worst = min_randomly(self.agent_pool[agent_index].strategy_pool, lambda x: x.virtual_points)
 
                     # update strategy frequency
                     all_stategy = self.all_strategy()
@@ -237,7 +237,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
             if mutation_rate > random.uniform(0,1):
                 # randomly select an agent
                 agent_index = random.randint(0, len(self.agent_pool) - 1)
-                
+
                 # randomly select an old strategy
                 strategy_num = len(self.agent_pool[agent_index].strategy_pool)
                 old_strat_index = random.randint(0, strategy_num - 1)
@@ -253,7 +253,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
                         strategy_freq[i] += 1
                     if all_stategy[i] == old_strat.strategy_table:
                         strategy_freq[i] -= 1
-                
+
                 # remove the old strategy of the agent and add the new strategy
                 self.agent_pool[agent_index].strategy_pool.pop(old_strat_index)
                 self.agent_pool[agent_index].strategy_pool.append(new_strat)
@@ -265,7 +265,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
         """
         mean_list = []
         stdd_list = []
-        
+
         volatility=[]
         avolatility=[]
         zero_win = 0
@@ -305,7 +305,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
                     self.mutate(h, strategy_freq)
                     num_of_one = 0
                     for agent in self.agent_pool:
-                        predict_temp  = agent.predict(self.all_history[-self.depth:])
+                        predict_temp  = agent.predict(self.all_history[-self.memory:])
                         num_of_one += predict_temp
                     game_result = 1 if num_of_one < self.agent_num / 2 else 0
                     for agent in self.agent_pool:
@@ -330,7 +330,7 @@ class MinorityGameWithStrategyTable(MinorityGame):
                             shan -= (strategy_freq[i]/strat_freq_sum) * math.log(strategy_freq[i]/strat_freq_sum)
                     # print(shan)
                     shannon.append(shan)
-                
+
                 # print("After the game, strategy frequencies are:")
                 # print(strategy_freq)
                 c = sum(shannon)/len(shannon)
@@ -386,7 +386,7 @@ if __name__ == "__main__":
     volatility = []
     avolatility = []
     shannon = []
-    m = MinorityGameWithStrategyTable(101, 2, 3, 3) 
+    m = MinorityGameWithStrategyTable(101, 2, 3, 3)
     # print(m.winner_for_diff_group())
     avevol=[]
     aveavol=[]
@@ -423,7 +423,7 @@ if __name__ == "__main__":
     #print(avg_win)
     # print(avolatility)
     # print(volatility)
-    
+
 
     # fig = plt.figure(figsize=(10, 4))
     # plt.plot(win_proportion)
