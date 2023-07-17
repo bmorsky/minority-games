@@ -1,13 +1,12 @@
 using Plots, Random, Statistics
 
 # Outputs
-max_M = 12
-avg_attendance_volatility = zeros(max_M*5,3)
+avg_attendance_volatility = zeros(11,11)
 
 # Parameters
 κ = 100 # payoff differential sensitivity
-ℓⁱ = 0.1 # rate of individual learning
-ℓˢ = 0.1 # rate of social learning
+M = 6 # memory length
+N = 1001 # number of players
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
@@ -15,14 +14,14 @@ S = 2 # number of strategy tables per individual
 # Variables
 attendance = Array{Int,1}(undef,num_turns)
 
-X = [51,101,251,501,1001]
+# Random numbers
 rng = MersenneTwister()
 
-count = 1
-for x = 1:5
-    N = X[x] # number of agents
+for ind_learn = 0:10
+    ℓⁱ = ind_learn/10 # rate of individual learning
     action = Array{Int,1}(undef,N) # actions taken: buy=1, sell=0
-    for M = 1:max_M
+    for soc_learn = 0:10
+        ℓˢ = soc_learn/10 # rate of social learning
         for game=1:num_games
             # Initialize game
             history = rand(rng,1:2^M)
@@ -79,37 +78,13 @@ for x = 1:5
                 virtual_points = update_virtual_points
 
             end
-            avg_attendance_volatility[count,1] += var(attendance)/(num_games*N)
+            avg_attendance_volatility[ind_learn+1,soc_learn+1] += var(attendance)/(num_games*N)
         end
-        avg_attendance_volatility[count,2] = (2^M)/N
-        avg_attendance_volatility[count,3] = x
-        count += 1
     end
 end
 
-avg_attendance_volatility[:,3] = Int.(avg_attendance_volatility[:,3])
-
-x1 = avg_attendance_volatility[1:12,2]
-x2 = avg_attendance_volatility[13:24,2]
-x3 = avg_attendance_volatility[25:36,2]
-x4 = avg_attendance_volatility[37:48,2]
-x5 = avg_attendance_volatility[49:60,2]
-
-y1 = avg_attendance_volatility[1:12,1]
-y2 = avg_attendance_volatility[13:24,1]
-y3 = avg_attendance_volatility[25:36,1]
-y4 = avg_attendance_volatility[37:48,1]
-y5 = avg_attendance_volatility[49:60,1]
-
-z1 = Int.(avg_attendance_volatility[1:12,3])
-z2 = Int.(avg_attendance_volatility[13:24,3])
-z3 = Int.(avg_attendance_volatility[25:36,3])
-z4 = Int.(avg_attendance_volatility[37:48,3])
-z5 = Int.(avg_attendance_volatility[49:60,3])
-
-scatter([x1 x2 x3 x4 x5], [y1 y2 y3 y4 y5],markercolor=[z1 z2 z3 z4 z5],xlims=(0.001,100),ylims=(0.1,1000),xscale=:log10,yscale=:log10,label=["N=51" "N=101" "N=251" "N=501" "N=1001"],xlabel = "\\alpha",ylabel="\\sigma ²/N",legend=:topright,margin=5Plots.mm)
-savefig("var_ind_soc_learn.pdf")
-
+heatmap(0:0.1:1, 0:0.1:1, avg_attendance_volatility, c=:thermal, xlabel="ℓⁱ", ylabel="ℓˢ", margin=5Plots.mm)
+savefig("attendance_heatmap.pdf")
 
 # soclearn = avg_attendance_volatility
 # indlearn = avg_attendance_volatility
