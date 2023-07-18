@@ -18,7 +18,7 @@ attendance = Array{Int,1}(undef,num_turns)
 X = [51,101,251,501,1001]
 rng = MersenneTwister()
 
-count = 1
+global count = 1
 for x = 1:5
     N = X[x] # number of agents
     action = Array{Int,1}(undef,N) # actions taken: buy=1, sell=0
@@ -83,7 +83,7 @@ for x = 1:5
         end
         avg_attendance_volatility[count,2] = (2^M)/N
         avg_attendance_volatility[count,3] = x
-        count += 1
+        global count += 1
     end
 end
 
