@@ -3,8 +3,8 @@ using RCall, Statistics
 # Parameters
 κ = 100 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
-ℓˢ = 0.1 # rate of social learning
-M = 2 # memory length
+ℓˢ = 0.2 # rate of social learning
+M = 6 # memory length
 N = 101 # number of agents
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
@@ -80,4 +80,4 @@ end
 using Plots
 
 plot(attendance,size = (500, 200),ylims=(-110,110),xlabel = "Time",ylabel="A",legend=false,margin=5Plots.mm)
-# savefig("ts_ls10_M2_N101_S2.pdf")
+savefig("ts_ls20_M6_N101_S2_crash.pdf")
