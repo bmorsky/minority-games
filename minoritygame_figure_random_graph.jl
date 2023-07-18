@@ -10,7 +10,6 @@ avg_attendance_volatility = zeros(max_M*5,3)
 ℓˢ = 0.1 # rate of social learning
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
-p = 0.1 # probability of connecting two agents
 S = 2 # number of strategy tables per individual
 
 # Variables
@@ -22,6 +21,7 @@ rng = MersenneTwister()
 count = 1
 for x = 1:5
     N = X[x] # number of agents
+    p = 10/N # probability of connecting two agents
     action = Array{Int,1}(undef,N) # actions taken: buy=1, sell=0
     for M = 1:max_M
         for game=1:num_games
