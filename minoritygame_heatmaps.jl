@@ -1,7 +1,9 @@
-using Plots, Random, Statistics
+using Plots, Random, Statistics, StatsBase
 
 # Outputs
 avg_attendance_volatility = zeros(6,6)
+avg_entropy = zeros(6,6)
+avg_payoffs = zeros(6,6)
 
 # Parameters
 κ = 100 # payoff differential sensitivity
@@ -24,7 +26,9 @@ for ind_learn = 1:6
         ℓˢ = (soc_learn-1)/20 # rate of social learning
         for game=1:num_games
             # Initialize game
+            entropy = 0
             history = rand(rng,1:2^M)
+            payoffs = 0
             strategy_tables = rand(rng,0:1,S*N,2^M) # S strategy tables for the N players
             virtual_points = zeros(Int64,N,S) # virtual points for all players' strategy tables
 
@@ -47,6 +51,7 @@ for ind_learn = 1:6
                 for i=1:N
                     virtual_points[i,1] += (-1)^(minority+strategy_tables[2*i-1,history])
                     virtual_points[i,2] += (-1)^(minority+strategy_tables[2*i,history])
+                    payoffs +=  (-1)^(minority+action[i])/(N*num_turns)
                 end
                 history = Int(mod(2*history,2^M) + minority + 1)
 
@@ -78,16 +83,29 @@ for ind_learn = 1:6
                 strategy_tables = update_strategy_tables
                 virtual_points = update_virtual_points
 
+                # Calculate entropy
+                strat_frequencies = values(proportionmap(collect(eachrow(strategy_tables))))
+                entropy += sum(-log.(strat_frequencies).*strat_frequencies)/num_turns
+
             end
             avg_attendance_volatility[ind_learn,soc_learn] += var(attendance)/(num_games*N)
-            
+            avg_entropy[ind_learn,soc_learn] += entropy/num_games
+            avg_payoffs[ind_learn,soc_learn] += payoffs/num_games
+
         end
     end
 end
 
-heatmap(0:0.05:0.25, 0:0.05:0.25, avg_attendance_volatility, c=:thermal, xlabel="ℓⁱ", ylabel="ℓˢ", margin=5Plots.mm)
-savefig("attendance_heatmap.pdf")
+pyplot()
 
-# soclearn = avg_attendance_volatility
-# indlearn = avg_attendance_volatility
+heatmap(0:0.05:0.25, 0:0.05:0.25, log10.(avg_attendance_volatility), xlabel="ℓˢ", ylabel="ℓⁱ",
+colorbar_ticks=[-1, 0, 1, 2], clims=(-1,2), colorbar_title="log(σ²/N)", thickness_scaling = 1.5)
+savefig("volatility_heatmap.pdf")
+
+heatmap(0:0.05:0.25, 0:0.05:0.25, avg_entropy, xlabel="ℓˢ", ylabel="ℓⁱ", 
+colorbar_ticks=[0, 2, 4, 6], clims=(0,6), colorbar_title="Entropy", thickness_scaling = 1.5)
+savefig("entropy_heatmap.pdf")
+
+heatmap(0:0.05:0.25, 0:0.05:0.25, avg_payoffs, xlabel="ℓˢ", ylabel="ℓⁱ", thickness_scaling = 1.5)
+savefig("payoff_heatmap.pdf")
 
