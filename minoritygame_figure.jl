@@ -10,7 +10,6 @@ avg_attendance_volatility = zeros(max_M*5,3)
 ℓˢ = 0.1 # rate of social learning
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
-p = 0.1 # probability of connecting two agents
 S = 2 # number of strategy tables per individual
 
 # Variables
@@ -28,9 +27,7 @@ for x = 1:5
             # Initialize game
             history = rand(rng,1:2^M)
             strategy_tables = rand(rng,0:1,S*N,2^M) # S strategy tables for the N players
-            update_strategy_tables = rand(rng,0:1,S*N,2^M) # for updating strategy tables
             virtual_points = zeros(Int64,N,S) # virtual points for all players' strategy tables
-            update_virtual_points = zeros(Int64,N,S) # for udpating virtual points
 
             # Run simulation
             for turn=1:num_turns
@@ -54,23 +51,24 @@ for x = 1:5
                 end
                 history = Int(mod(2*history,2^M) + minority + 1)
 
-                # Individual learning
-                for i=1:N
-                    if ℓⁱ > rand(rng)
-                        new_strat = rand(rng,0:1)
-                        strategy_tables[i+new_strat,:] = rand(rng,0:1,2^M)
-                        virtual_points[i,new_strat+1] = 0
-                    end
-                end
+                # # Individual learning
+                # for i=1:N
+                #     if ℓⁱ > rand(rng)
+                #         new_strat = rand(rng,0:1)
+                #         strategy_tables[i+new_strat,:] = rand(rng,0:1,2^M)
+                #         virtual_points[i,new_strat+1] = 0
+                #     end
+                # end
 
                 # Social learning
+                update_strategy_tables = strategy_tables
+                update_virtual_points = virtual_points
                 for i=1:N
                     if ℓˢ > rand(rng)
                         # Find worst strategy and its points of focal player
                         worst_points,worst_strat = findmin(virtual_points[i,:])
                         # Select random other player and find its best strat and points
-                        # player = rand(filter(x -> x ∉ [i], 1:N))
-                        player = rand(adjacency_matrix[i])
+                        player = rand(filter(x -> x ∉ [i], 1:N))
                         best_points,best_strat = findmax(virtual_points[player,:])
                         if 1/(1+exp(κ*(worst_points-best_points))) > rand(rng)
                             update_strategy_tables[2*(i-1)+worst_strat,:] = strategy_tables[2*(player-1)+best_strat,:]
@@ -110,10 +108,9 @@ z3 = Int.(avg_attendance_volatility[25:36,3])
 z4 = Int.(avg_attendance_volatility[37:48,3])
 z5 = Int.(avg_attendance_volatility[49:60,3])
 
-scatter([x1 x2 x3 x4 x5], [y1 y2 y3 y4 y5],markercolor=[z1 z2 z3 z4 z5],xlims=(0.001,100),ylims=(0.1,1000),xscale=:log10,yscale=:log10,label=["N=51" "N=101" "N=251" "N=501" "N=1001"],xlabel = "\\alpha",ylabel="\\sigma ²/N",legend=:topright,margin=5Plots.mm)
-savefig("var_soc_ind_learn.pdf")
-
-
-# soclearn = avg_attendance_volatility
-# indlearn = avg_attendance_volatility
-
+scatter([x1 x2 x3 x4 x5], [y1 y2 y3 y4 y5], markercolor=[z1 z2 z3 z4 z5],
+xlims=(0.001,100), ylims=(0.1,1000), xscale=:log10, yscale=:log10,
+label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
+xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:topright,
+thickness_scaling = 1.5)
+savefig("var_soc_learn.pdf")
