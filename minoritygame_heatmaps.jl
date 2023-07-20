@@ -1,12 +1,14 @@
-using Plots, Random, Statistics
+using Plots, Random, Statistics, StatsBase
 
 # Outputs
-avg_attendance_volatility = zeros(11,11)
+avg_attendance_volatility = zeros(6,6)
+avg_entropy = zeros(6,6)
+avg_payoffs = zeros(6,6)
 
 # Parameters
 κ = 100 # payoff differential sensitivity
 M = 6 # memory length
-N = 1001 # number of players
+N = 101 # number of players
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
@@ -17,18 +19,19 @@ attendance = Array{Int,1}(undef,num_turns)
 # Random numbers
 rng = MersenneTwister()
 
-for ind_learn = 0:10
-    ℓⁱ = ind_learn/10 # rate of individual learning
+for ind_learn = 1:6
+    ℓⁱ = (ind_learn-1)/20 # rate of individual learning
     action = Array{Int,1}(undef,N) # actions taken: buy=1, sell=0
-    for soc_learn = 0:10
-        ℓˢ = soc_learn/10 # rate of social learning
+    for soc_learn = 1:6
+        ℓˢ = (soc_learn-1)/20 # rate of social learning
         for game=1:num_games
             # Initialize game
+            entropy = 0
             history = rand(rng,1:2^M)
+            payoffs = 0
             strategy_tables = rand(rng,0:1,S*N,2^M) # S strategy tables for the N players
-            update_strategy_tables = rand(rng,0:1,S*N,2^M) # for updating strategy tables
             virtual_points = zeros(Int64,N,S) # virtual points for all players' strategy tables
-            update_virtual_points = zeros(Int64,N,S) # for udpating virtual points
+
             # Run simulation
             for turn=1:num_turns
                 # Actions taken
@@ -48,6 +51,7 @@ for ind_learn = 0:10
                 for i=1:N
                     virtual_points[i,1] += (-1)^(minority+strategy_tables[2*i-1,history])
                     virtual_points[i,2] += (-1)^(minority+strategy_tables[2*i,history])
+                    payoffs +=  (-1)^(minority+action[i])/(N*num_turns)
                 end
                 history = Int(mod(2*history,2^M) + minority + 1)
 
@@ -61,6 +65,8 @@ for ind_learn = 0:10
                 end
 
                 # Social learning
+                update_strategy_tables = strategy_tables
+                update_virtual_points = virtual_points
                 for i=1:N
                     if ℓˢ > rand(rng)
                         # Find worst strategy and its points of focal player
@@ -77,15 +83,29 @@ for ind_learn = 0:10
                 strategy_tables = update_strategy_tables
                 virtual_points = update_virtual_points
 
+                # Calculate entropy
+                strat_frequencies = values(proportionmap(collect(eachrow(strategy_tables))))
+                entropy += sum(-log.(strat_frequencies).*strat_frequencies)/num_turns
+
             end
-            avg_attendance_volatility[ind_learn+1,soc_learn+1] += var(attendance)/(num_games*N)
+            avg_attendance_volatility[ind_learn,soc_learn] += var(attendance)/(num_games*N)
+            avg_entropy[ind_learn,soc_learn] += entropy/num_games
+            avg_payoffs[ind_learn,soc_learn] += payoffs/num_games
+
         end
     end
 end
 
-heatmap(0:0.1:1, 0:0.1:1, avg_attendance_volatility, c=:thermal, xlabel="ℓⁱ", ylabel="ℓˢ", margin=5Plots.mm)
-savefig("attendance_heatmap.pdf")
+pyplot()
 
-# soclearn = avg_attendance_volatility
-# indlearn = avg_attendance_volatility
+heatmap(0:0.05:0.25, 0:0.05:0.25, log10.(avg_attendance_volatility), xlabel="ℓˢ", ylabel="ℓⁱ",
+colorbar_ticks=[-1, 0, 1, 2], clims=(-1,2), colorbar_title="log(σ²/N)", thickness_scaling = 1.5)
+savefig("volatility_heatmap.pdf")
+
+heatmap(0:0.05:0.25, 0:0.05:0.25, avg_entropy, xlabel="ℓˢ", ylabel="ℓⁱ", 
+colorbar_ticks=[0, 2, 4, 6], clims=(0,6), colorbar_title="Entropy", thickness_scaling = 1.5)
+savefig("entropy_heatmap.pdf")
+
+heatmap(0:0.05:0.25, 0:0.05:0.25, avg_payoffs, xlabel="ℓˢ", ylabel="ℓⁱ", thickness_scaling = 1.5)
+savefig("payoff_heatmap.pdf")
 

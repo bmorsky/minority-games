@@ -7,7 +7,7 @@ avg_attendance_volatility = zeros(max_M*5,3)
 # Parameters
 κ = 100 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
-ℓˢ = 0.1 # rate of social learning
+ℓˢ = 0.5 # rate of social learning
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
@@ -64,7 +64,7 @@ for x = 1:5
                 update_strategy_tables = strategy_tables
                 update_virtual_points = virtual_points
                 for i=1:N
-                    if ℓˢ > rand(rng)
+                    if ℓˢ >= rand(rng)
                         # Find worst strategy and its points of focal player
                         worst_points,worst_strat = findmin(virtual_points[i,:])
                         # Select random other player and find its best strat and points
