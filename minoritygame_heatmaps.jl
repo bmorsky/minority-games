@@ -11,7 +11,7 @@ M = 6 # memory length
 N = 101 # number of players
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
-S = 2 # number of strategy tables per individual
+S = 3 # number of strategy tables per individual
 
 # Variables
 attendance = Array{Int,1}(undef,num_turns)
@@ -36,7 +36,7 @@ for ind_learn = 1:6
             for turn=1:num_turns
                 # Actions taken
                 for i=1:N
-                    best_strat = 2*(i-1) + findmax(virtual_points[i,:])[2]
+                    best_strat = S*(i-1) + findmax(virtual_points[i,:])[2]
                     action[i] = strategy_tables[best_strat,history]
                 end
                 cur_attendance = sum(action)
@@ -49,9 +49,10 @@ for ind_learn = 1:6
 
                 # Determine virtual payoffs and win rate
                 for i=1:N
-                    virtual_points[i,1] += (-1)^(minority+strategy_tables[2*i-1,history])
-                    virtual_points[i,2] += (-1)^(minority+strategy_tables[2*i,history])
-                    payoffs +=  (-1)^(minority+action[i])/(N*num_turns)
+                    for j=1:S
+                        virtual_points[i,j] += (-1)^(minority+strategy_tables[S*(i-1)+j,history])
+                        payoffs +=  (-1)^(minority+action[i])/(N*num_turns)
+                    end
                 end
                 history = Int(mod(2*history,2^M) + minority + 1)
 
@@ -75,7 +76,7 @@ for ind_learn = 1:6
                         player = rand(filter(x -> x ∉ [i], 1:N))
                         best_points,best_strat = findmax(virtual_points[player,:])
                         if 1/(1+exp(κ*(worst_points-best_points))) > rand(rng)
-                            update_strategy_tables[2*(i-1)+worst_strat,:] = strategy_tables[2*(player-1)+best_strat,:]
+                            update_strategy_tables[S*(i-1)+worst_strat,:] = strategy_tables[S*(player-1)+best_strat,:]
                             update_virtual_points[i,worst_strat] = virtual_points[player,best_strat]
                         end
                     end
@@ -100,12 +101,8 @@ pyplot()
 
 heatmap(0:0.05:0.25, 0:0.05:0.25, log10.(avg_attendance_volatility), xlabel="ℓˢ", ylabel="ℓⁱ",
 colorbar_ticks=[-1, 0, 1, 2], clims=(-1,2), colorbar_title="log(σ²/N)", thickness_scaling = 1.5)
-savefig("volatility_heatmap.pdf")
+savefig("volatility_heatmap_S3.pdf")
 
-heatmap(0:0.05:0.25, 0:0.05:0.25, avg_entropy, xlabel="ℓˢ", ylabel="ℓⁱ", 
-colorbar_ticks=[0, 2, 4, 6], clims=(0,6), colorbar_title="Entropy", thickness_scaling = 1.5)
-savefig("entropy_heatmap.pdf")
-
-heatmap(0:0.05:0.25, 0:0.05:0.25, avg_payoffs, xlabel="ℓˢ", ylabel="ℓⁱ", thickness_scaling = 1.5)
-savefig("payoff_heatmap.pdf")
+heatmap(0:0.05:0.25, 0:0.05:0.25, avg_entropy, xlabel="ℓˢ", ylabel="ℓⁱ", thickness_scaling = 1.5)
+savefig("entropy_heatmap_S3.pdf")
 
