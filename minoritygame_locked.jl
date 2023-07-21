@@ -6,7 +6,7 @@ probability_locked = zeros(55,3)
 # Parameters
 κ = 100 # payoff differential sensitivity
 M = 6 # memory length
-num_games = 20 # number of games to average over
+num_games = 50 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
 
@@ -81,28 +81,28 @@ end
 
 probability_locked[:,3] = Int.(probability_locked[:,3])
 
-x1 = probability_locked[1:12,2]
-x2 = probability_locked[13:24,2]
-x3 = probability_locked[25:36,2]
-x4 = probability_locked[37:48,2]
-x5 = probability_locked[49:60,2]
+x1 = probability_locked[1:11,2]
+x2 = probability_locked[12:22,2]
+x3 = probability_locked[23:33,2]
+x4 = probability_locked[34:44,2]
+x5 = probability_locked[45:55,2]
 
-y1 = probability_locked[1:12,1]
-y2 = probability_locked[13:24,1]
-y3 = probability_locked[25:36,1]
-y4 = probability_locked[37:48,1]
-y5 = probability_locked[49:60,1]
+y1 = probability_locked[1:11,1]
+y2 = probability_locked[12:22,1]
+y3 = probability_locked[23:33,1]
+y4 = probability_locked[34:44,1]
+y5 = probability_locked[45:55,1]
 
-z1 = Int.(probability_locked[1:12,3])
-z2 = Int.(probability_locked[13:24,3])
-z3 = Int.(probability_locked[25:36,3])
-z4 = Int.(probability_locked[37:48,3])
-z5 = Int.(probability_locked[49:60,3])
+z1 = Int.(probability_locked[1:11,3])
+z2 = Int.(probability_locked[12:22,3])
+z3 = Int.(probability_locked[23:33,3])
+z4 = Int.(probability_locked[34:44,3])
+z5 = Int.(probability_locked[45:55,3])
 
 scatter([x1 x2 x3 x4 x5], [y1 y2 y3 y4 y5], markercolor=[z1 z2 z3 z4 z5],
-xlims=(0,1), ylims=(0,1),
+xlims=(-0.05,1.05), ylims=(-0.05,1.05),
 label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
-xlabel = "ℓˢ", ylabel="Probability population becomes locked into an action", legend=:bottomright,
+xlabel = "ℓˢ", ylabel="Probability", legend=:topleft,
 thickness_scaling = 1.5)
 savefig("locked_strats.pdf")
 
