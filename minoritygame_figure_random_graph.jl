@@ -1,11 +1,11 @@
-using Plots, Random, RCall, Statistics
+using Plots, Random, Statistics
 
 # Outputs
 max_M = 12
 avg_attendance_volatility = zeros(max_M*5,3)
 
 # Parameters
-d = 4 # average node degree
+d = 2 # average node degree
 κ = 100 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
 ℓˢ = 0.1 # rate of social learning
@@ -19,7 +19,7 @@ attendance = Array{Int,1}(undef,num_turns)
 X = [51,101,251,501,1001]
 rng = MersenneTwister()
 
-count = 1
+global count = 1
 for x = 1:5
     N = X[x] # number of agents
     p = d/N # probability of connecting two agents
@@ -64,14 +64,14 @@ for x = 1:5
                 end
                 history = Int(mod(2*history,2^M) + minority + 1)
 
-                # # Individual learning
-                # for i=1:N
-                #     if ℓⁱ > rand(rng)
-                #         new_strat = rand(rng,0:1)
-                #         strategy_tables[i+new_strat,:] = rand(rng,0:1,2^M)
-                #         virtual_points[i,new_strat+1] = 0
-                #     end
-                # end
+                # Individual learning
+                for i=1:N
+                    if ℓⁱ > rand(rng)
+                        new_strat = rand(rng,0:1)
+                        strategy_tables[i+new_strat,:] = rand(rng,0:1,2^M)
+                        virtual_points[i,new_strat+1] = 0
+                    end
+                end
 
                 # Social learning
                 update_strategy_tables = strategy_tables
@@ -100,7 +100,7 @@ for x = 1:5
         end
         avg_attendance_volatility[count,2] = (2^M)/N
         avg_attendance_volatility[count,3] = x
-        count += 1
+        global count += 1
     end
 end
 
@@ -127,6 +127,6 @@ z5 = Int.(avg_attendance_volatility[49:60,3])
 scatter([x1 x2 x3 x4 x5], [y1 y2 y3 y4 y5], markercolor=[z1 z2 z3 z4 z5],
 xlims=(0.001,100), ylims=(0.1,1000), xscale=:log10, yscale=:log10,
 label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
-xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:bottomright,
+xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:topright,
 thickness_scaling = 1.5)
-savefig("var_soc_learn_d4.pdf")
+savefig("var_ind_soc_learn_d2.pdf")
