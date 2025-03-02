@@ -5,13 +5,13 @@ max_M = 12
 avg_attendance_volatility = zeros(max_M*5,3)
 
 # Parameters
-d = 2 # average node degree
 κ = 1 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
 ℓˢ = 0.1 # rate of social learning
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
+γ = 0.5
 
 # Variables
 attendance = Array{Int,1}(undef,num_turns)
@@ -19,10 +19,27 @@ attendance = Array{Int,1}(undef,num_turns)
 X = [51,101,251,501,1001]
 rng = MersenneTwister()
 
+# # Conformity
+# function immitate(freq)
+#     if freq < 0.5
+#         return 0.5*(2*freq)^γ
+#     else
+#         return 1 - 0.5*(2*(1-freq))^γ
+#     end
+# end
+
+# # Anticonformity
+function immitate(freq)
+    if freq < 0.5
+        return 1-0.5*(2*freq)^γ
+    else
+        return 0.5*(2*(1-freq))^γ
+    end
+end
+
 global count = 1
 for x = 1:5
     N = X[x] # number of agents
-    p = d/N # probability of connecting two agents
     action = Array{Int,1}(undef,N) # actions taken: buy=1, sell=0
     for M = 1:max_M
         for game=1:num_games
@@ -30,17 +47,6 @@ for x = 1:5
             history = rand(rng,1:2^M)
             strategy_tables = rand(rng,0:1,S*N,2^M) # S strategy tables for the N players
             virtual_points = zeros(Int64,N,S) # virtual points for all players' strategy tables
-            adjacency_matrix = [[] for i = 1:N]
-            #
-            # Generate random graph
-            for i=1:N-1
-                for j=i+1:N
-                    if p >= rand(rng)
-                        push!(adjacency_matrix[i],j)
-                        push!(adjacency_matrix[j],i)
-                    end
-                end
-            end
 
             # Run simulation
             for turn=1:num_turns
@@ -77,18 +83,17 @@ for x = 1:5
                 update_strategy_tables = deepcopy(strategy_tables)
                 update_virtual_points = deepcopy(virtual_points)
                 for i=1:N
-                    if !isempty(adjacency_matrix[i])
-                        if ℓˢ >= rand(rng)
-                            # Find worst strategy and its points of focal player
-                            worst_points,worst_strat = findmin(virtual_points[i,:])
-                            # Select random other player and find its best strat and points
-                            # player = rand(filter(x -> x ∉ [i], 1:N))
-                            player = rand(rng,adjacency_matrix[i])
+                    if ℓˢ > rand(rng)
+                        # Find worst strategy and its points of focal player
+                        worst_points,worst_strat = findmin(virtual_points[i,:])
+                        # Select random other player from the majority and find its best strat and points
+                        # player = rand(findall(x -> x == mod(minority+1,2), action))
+                        neigh_players = findall(x -> x != action[i], action)
+                        if neigh_players != [] && immitate(length(neigh_players)/N) ≤ rand()
+                            player = rand(neigh_players)
                             best_points,best_strat = findmax(virtual_points[player,:])
-                            if 1/(1+exp(κ*(worst_points-best_points))) >= rand(rng)
-                                update_strategy_tables[2*(i-1)+worst_strat,:] = strategy_tables[2*(player-1)+best_strat,:]
-                                update_virtual_points[i,worst_strat] = virtual_points[player,best_strat]
-                            end
+                            update_strategy_tables[S*(i-1)+worst_strat,:] = strategy_tables[S*(player-1)+best_strat,:]
+                            update_virtual_points[i,worst_strat] = virtual_points[player,best_strat]
                         end
                     end
                 end
@@ -129,4 +134,4 @@ xlims=(0.001,100), ylims=(0.1,1000), xscale=:log10, yscale=:log10,
 label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
 xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:bottomright,
 thickness_scaling = 1.5)
-savefig("var_soc_learn_d2_kappa1.pdf")
+savefig("var_soc_learn_gamma0.5_anticonformity.pdf")

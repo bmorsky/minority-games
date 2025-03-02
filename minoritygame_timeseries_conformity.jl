@@ -1,11 +1,11 @@
 using Plots, RCall, Statistics, Random
 
 # Parameters
-κ = 1 # payoff differential sensitivity
+κ = 100 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
-ℓˢ = 0.2 # rate of social learning
+ℓˢ = 0.1 # rate of social learning
 M = 6 # memory length
-N = 101 # number of agents
+N = 1001 # number of agents
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
 
@@ -58,7 +58,7 @@ for turn=1:num_turns
     #     end
     # end
 
-    # Social learning
+    # Social conformity
     update_strategy_tables = deepcopy(strategy_tables)
     update_virtual_points = deepcopy(virtual_points)
     for i=1:N
@@ -66,9 +66,11 @@ for turn=1:num_turns
             # Find worst strategy and its points of focal player
             worst_points,worst_strat = findmin(virtual_points[i,:])
             # Select random other player and find its best strat and points
-            player = rand(filter(x -> x ∉ [i], 1:N))
-            best_points,best_strat = findmax(virtual_points[player,:])
-            if 1/(1+exp(κ*(worst_points-best_points))) > rand(rng)
+            # player = rand(findall(x -> x == mod(minority+1,2), action))
+            minority_players = findall(x -> x == minority, action)
+            if minority_players != []
+                player = rand(minority_players)
+                best_points,best_strat = findmax(virtual_points[player,:])
                 update_strategy_tables[2*(i-1)+worst_strat,:] = strategy_tables[2*(player-1)+best_strat,:]
                 update_virtual_points[i,worst_strat] = virtual_points[player,best_strat]
             end
@@ -79,6 +81,6 @@ for turn=1:num_turns
 
 end
 
-plot(attendance,size = (500, 200),ylims=(-110,110),xlabel = "Time",ylabel="A",
+plot(attendance,size = (500, 200),ylims=(-1100,1100),xlabel = "Time",ylabel="A",
 legend=false,thickness_scaling = 1.5)
-savefig("ts_soc_learn_ls20_M6_N101_S2_kappa1_crash.pdf")
+savefig("ts_soc_learn_M6_N1001_S2_anticonform.pdf")

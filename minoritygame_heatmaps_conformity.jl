@@ -6,12 +6,13 @@ avg_entropy = zeros(11,11)
 avg_payoffs = zeros(11,11)
 
 # Parameters
-κ = 0.001 # payoff differential sensitivity
+κ = 100 # payoff differential sensitivity
 M = 6 # memory length
 N = 101 # number of players
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
+γ = 0.5
 
 # Variables
 attendance = Array{Int,1}(undef,num_turns)
@@ -19,11 +20,29 @@ attendance = Array{Int,1}(undef,num_turns)
 # Random numbers
 rng = MersenneTwister()
 
+# Conformity
+function immitate(freq)
+    if freq < 0.5
+        return 0.5*(2*freq)^γ
+    else
+        return 1 - 0.5*(2*(1-freq))^γ
+    end
+end
+
+# Anticonformity
+# function immitate(freq)
+#     if freq < 0.5
+#         return 1-0.5*(2*freq)^γ
+#     else
+#         return 0.5*(2*(1-freq))^γ
+#     end
+# end
+
 for ind_learn = 1:11
-    ℓⁱ = (ind_learn-1)/10 # rate of individual learning
+    ℓⁱ = (ind_learn-1)/20 # rate of individual learning
     action = Array{Int,1}(undef,N) # actions taken: buy=1, sell=0
     for soc_learn = 1:11
-        ℓˢ = (soc_learn-1)/10 # rate of social learning
+        ℓˢ = (soc_learn-1)/20 # rate of social learning
         for game=1:num_games
             # Initialize game
             entropy = 0
@@ -72,10 +91,20 @@ for ind_learn = 1:11
                     if ℓˢ > rand(rng)
                         # Find worst strategy and its points of focal player
                         worst_points,worst_strat = findmin(virtual_points[i,:])
-                        # Select random other player and find its best strat and points
-                        player = rand(filter(x -> x ∉ [i], 1:N))
-                        best_points,best_strat = findmax(virtual_points[player,:])
-                        if 1/(1+exp(κ*(worst_points-best_points))) > rand(rng)
+                        # Select random other player from the majority and find its best strat and points
+                        # player = rand(findall(x -> x == mod(minority+1,2), action))
+                        # minority_players = findall(x -> x == minority, action)
+                        # majority_players = findall(x -> x == minority, action)
+                        # if minority_players != []
+                        #     player = rand(minority_players)
+                        #     best_points,best_strat = findmax(virtual_points[player,:])
+                        #     update_strategy_tables[S*(i-1)+worst_strat,:] = strategy_tables[S*(player-1)+best_strat,:]
+                        #     update_virtual_points[i,worst_strat] = virtual_points[player,best_strat]
+                        # end
+                        neigh_players = findall(x -> x != action[i], action)
+                        if neigh_players != [] && immitate(length(neigh_players)/N) ≤ rand()
+                            player = rand(neigh_players)
+                            best_points,best_strat = findmax(virtual_points[player,:])
                             update_strategy_tables[S*(i-1)+worst_strat,:] = strategy_tables[S*(player-1)+best_strat,:]
                             update_virtual_points[i,worst_strat] = virtual_points[player,best_strat]
                         end
@@ -100,10 +129,10 @@ end
 pyplot()
 
 heatmap(0:0.1:1, 0:0.1:1, log10.(avg_attendance_volatility), xlabel="ℓˢ", ylabel="ℓⁱ",
-colorbar_ticks=[-1, 0, 1, 2], clims=(-1,2), thickness_scaling = 1.5)
-savefig("volatility_heatmap_S2_kappa0.001.pdf")
+colorbar_ticks=[-1, 0, 1, 2], clims=(-1,2), colorbar_title="log(σ²/N)", thickness_scaling = 1.5)
+savefig("volatility_heatmap_S2gamma0.5_conformity.pdf")
 
 heatmap(0:0.1:1, 0:0.1:1, avg_entropy, xlabel="ℓˢ", ylabel="ℓⁱ", 
 colorbar_ticks=[0, 2, 4, 6], clims=(0,6), thickness_scaling = 1.5)
-savefig("entropy_heatmap_S2_kappa0.001.pdf")
+savefig("entropy_heatmap_S2gamma0.5_conformity.pdf")
 

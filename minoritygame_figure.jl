@@ -5,9 +5,9 @@ max_M = 12
 avg_attendance_volatility = zeros(max_M*5,3)
 
 # Parameters
-κ = 100 # payoff differential sensitivity
+κ = 0.001 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
-ℓˢ = 0.5 # rate of social learning
+ℓˢ = 0.1 # rate of social learning
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
@@ -51,18 +51,18 @@ for x = 1:5
                 end
                 history = Int(mod(2*history,2^M) + minority + 1)
 
-                # # Individual learning
-                # for i=1:N
-                #     if ℓⁱ > rand(rng)
-                #         new_strat = rand(rng,0:1)
-                #         strategy_tables[i+new_strat,:] = rand(rng,0:1,2^M)
-                #         virtual_points[i,new_strat+1] = 0
-                #     end
-                # end
+                # Individual learning
+                for i=1:N
+                    if ℓⁱ > rand(rng)
+                        new_strat = rand(rng,0:1)
+                        strategy_tables[i+new_strat,:] = rand(rng,0:1,2^M)
+                        virtual_points[i,new_strat+1] = 0
+                    end
+                end
 
                 # Social learning
-                update_strategy_tables = strategy_tables
-                update_virtual_points = virtual_points
+                update_strategy_tables = deepcopy(strategy_tables)
+                update_virtual_points = deepcopy(virtual_points)
                 for i=1:N
                     if ℓˢ >= rand(rng)
                         # Find worst strategy and its points of focal player
@@ -76,8 +76,8 @@ for x = 1:5
                         end
                     end
                 end
-                strategy_tables = update_strategy_tables
-                virtual_points = update_virtual_points
+                strategy_tables = deepcopy(update_strategy_tables)
+                virtual_points = deepcopy(update_virtual_points)
 
             end
             avg_attendance_volatility[count,1] += var(attendance)/(num_games*N)
@@ -111,6 +111,6 @@ z5 = Int.(avg_attendance_volatility[49:60,3])
 scatter([x1 x2 x3 x4 x5], [y1 y2 y3 y4 y5], markercolor=[z1 z2 z3 z4 z5],
 xlims=(0.001,100), ylims=(0.1,1000), xscale=:log10, yscale=:log10,
 label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
-xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:bottomright,
+xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:topright,
 thickness_scaling = 1.5)
-savefig("var_soc_learn.pdf")
+savefig("var_ind_soc_learn_kappa0.001.pdf")

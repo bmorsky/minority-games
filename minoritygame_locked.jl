@@ -4,7 +4,7 @@ using Plots, Random, Statistics
 probability_locked = zeros(55,3)
 
 # Parameters
-κ = 100 # payoff differential sensitivity
+κ = 1 # payoff differential sensitivity
 M = 6 # memory length
 num_games = 50 # number of games to average over
 num_turns = 500 # number of turns
@@ -105,4 +105,3 @@ label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
 xlabel = "ℓˢ", ylabel="Probability", legend=:topleft,
 thickness_scaling = 1.5)
 savefig("locked_strats.pdf")
-

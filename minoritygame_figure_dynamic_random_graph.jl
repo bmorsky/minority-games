@@ -5,13 +5,14 @@ max_M = 12
 avg_attendance_volatility = zeros(max_M*5,3)
 
 # Parameters
-d = 2 # average node degree
+d = 0.5 # average node degree
 κ = 1 # payoff differential sensitivity
 ℓⁱ = 0.1 # rate of individual learning
 ℓˢ = 0.1 # rate of social learning
 num_games = 20 # number of games to average over
 num_turns = 500 # number of turns
 S = 2 # number of strategy tables per individual
+ζ = 0.1
 
 # Variables
 attendance = Array{Int,1}(undef,num_turns)
@@ -95,6 +96,19 @@ for x = 1:5
                 strategy_tables = deepcopy(update_strategy_tables)
                 virtual_points = deepcopy(update_virtual_points)
 
+                # Change graph edges
+                shuffled = shuffle(1:N)
+                for i ∈ shuffled
+                    if rand() ≤ ζ && !isempty(adjacency_matrix[i])
+                        j = rand(adjacency_matrix[i])
+                        deleteat!(adjacency_matrix[i], findfirst(x->x==j, adjacency_matrix[i]))
+                        deleteat!(adjacency_matrix[j], findfirst(x->x==i, adjacency_matrix[j]))
+                        newj = rand(deleteat!(collect(1:N),findfirst(x->x==i, collect(1:N))))
+                        push!(adjacency_matrix[i],newj)
+                        push!(adjacency_matrix[newj],i)
+                    end
+                end
+
             end
             avg_attendance_volatility[count,1] += var(attendance)/(num_games*N)
         end
@@ -129,4 +143,4 @@ xlims=(0.001,100), ylims=(0.1,1000), xscale=:log10, yscale=:log10,
 label=["N=51" "N=101" "N=251" "N=501" "N=1001"],
 xlabel = "\\alpha", ylabel="\\sigma ²/N", legend=:bottomright,
 thickness_scaling = 1.5)
-savefig("var_soc_learn_d2_kappa1.pdf")
+savefig("var_soc_learn_d0.5_kappa1_zeta0.1.pdf")
